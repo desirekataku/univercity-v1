@@ -91,6 +91,20 @@ export const eventService = {
 
     return { success: true, participating: !isParticipant };
   },
+  
+  async getAllEvents() {
+  const ref = collection(db, EVENTS);
+  const q = query(
+    ref,
+    where('status', 'in', ['upcoming', 'ongoing']),
+    orderBy('eventDate', 'asc'),
+    limit(50)
+  );
+  const snapshot = await getDocs(q);
+  const events = [];
+  snapshot.forEach(doc => events.push({ id: doc.id, ...doc.data() }));
+  return { success: true, data: events };
+},
 
   // Vérifier si l'utilisateur participe
   async checkParticipation(eventId, userId) {
