@@ -1,0 +1,113 @@
+
+.topnav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  height: var(--nav);
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  gap: 1rem;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--blue-dark);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.logo span { color: var(--blue); }
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nav-link {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+.nav-link:hover { color: var(--blue); }
+
+.nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nav-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 0.85rem;
+  color: #fff; text-decoration: none;
+}
+
+.btn-logout {
+  padding: 0.4rem 1rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px;
+}
+.hamburger-btn span {
+  display: block;
+  width: 20px; height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+}
+
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: var(--nav); left: 0; right: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 1rem;
+  z-index: 199;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-md);
+}
+.mobile-menu a, .mobile-menu button {
+  padding: 0.5rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  background: none;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .hamburger-btn { display: flex; }
+  .mobile-menu { display: flex; }
+  .btn-logout { display: none; }
+}
+

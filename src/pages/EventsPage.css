@@ -1,0 +1,40 @@
+
+.events-page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.sidebar-left {
+  position: sticky;
+  top: calc(var(--nav) + 1.5rem);
+  height: fit-content;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+
+textarea.input {
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 1rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.events-list {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 900px) {
+  .sidebar-left { display: none; }
+}
+

@@ -1,0 +1,47 @@
+
+.create-group-page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.create-group-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: calc(var(--nav) + 2rem) 1.25rem 2rem;
+}
+
+.create-group-container h2 {
+  margin-bottom: 0.5rem;
+}
+
+.create-group-container p {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+
+.auth-error {
+  background: var(--red-light);
+  color: var(--red);
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+textarea.input {
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 1rem;
+  font-family: inherit;
+}
+

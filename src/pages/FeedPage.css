@@ -1,0 +1,27 @@
+.feed-page { min-height: 100vh; background: var(--bg); }
+
+.sidebar-left {
+  position: sticky;
+  top: calc(var(--nav) + 1.5rem);
+  height: fit-content;
+}
+
+.group-mini {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+}
+.group-mini:last-child { border-bottom: none; }
+.group-mini:hover { background: var(--blue-pale); margin: 0 -0.5rem; padding: 0.5rem; border-radius: var(--radius-sm); }
+.group-mini-name { font-size: 0.85rem; font-weight: 600; }
+.group-mini-meta { font-size: 0.75rem; color: var(--text-muted); }
+
+@media (max-width: 900px) {
+  .sidebar-left { display: none; }
+}
+
