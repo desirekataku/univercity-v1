@@ -12,6 +12,8 @@ const FeedPage = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState({});
+  const [comments, setComments] = useState({});
+  const [showComments, setShowComments] = useState({});
 
   useEffect(() => {
     if (user) loadFeed();
@@ -28,13 +30,42 @@ const FeedPage = () => {
     setLoading(false);
   };
 
+  const getGroupName = (groupId) => {
+    const group = groups.find(g => g.id === groupId);
+    return group?.name || 'Groupe';
+  };
+
+  const getGroupBg = (groupId) => {
+    const group = groups.find(g => g.id === groupId);
+    return group?.bg || '#1B4FD8';
+  };
+
   const toggleLike = async (postId) => {
     const result = await postService.toggleLike(postId, user.uid);
     if (result.success) {
       setPosts(prev => prev.map(p =>
-        p.id === postId ? { ...p, likes: result.liked ? p.likes + 1 : p.likes - 1, likedBy: result.liked ? [...p.likedBy, user.uid] : p.likedBy.filter(id => id !== user.uid) } : p
+        p.id === postId ? { 
+          ...p, 
+          likes: result.liked ? p.likes + 1 : p.likes - 1, 
+          likedBy: result.liked ? [...(p.likedBy || []), user.uid] : (p.likedBy || []).filter(id => id !== user.uid) 
+        } : p
       ));
     }
+  };
+
+  const loadComments = async (postId) => {
+    const result = await postService.getComments(postId);
+    if (result.success) {
+      setComments(prev => ({ ...prev, [postId]: result.data }));
+    }
+  };
+
+  const toggleComments = (postId) => {
+    setShowComments(prev => {
+      const newState = { ...prev, [postId]: !prev[postId] };
+      if (newState[postId]) loadComments(postId);
+      return newState;
+    });
   };
 
   const submitComment = async (postId) => {
@@ -49,6 +80,7 @@ const FeedPage = () => {
     });
 
     setCommentText(prev => ({ ...prev, [postId]: '' }));
+    loadComments(postId);
     loadFeed();
   };
 
@@ -87,32 +119,73 @@ const FeedPage = () => {
           ) : (
             posts.map(post => (
               <div key={post.id} className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                {/* En-tête du post */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                   <div className="avatar" style={{ background: post.authorAvatarBg || '#1B4FD8' }}>
                     {post.authorInitials}
                   </div>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <strong>{post.authorName}</strong>
-                    <div className="text-muted" style={{ fontSize: '0.8rem' }}>{post.time}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
+                      <span className="text-muted" style={{ fontSize: '0.8rem' }}>{post.time}</span>
+                      <span style={{
+                        background: getGroupBg(post.groupId),
+                        color: '#fff',
+                        padding: '0.1rem 0.5rem',
+                        borderRadius: '100px',
+                        fontSize: '0.7rem',
+                        fontWeight: 600
+                      }}>
+                        📢 {getGroupName(post.groupId)}
+                      </span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Contenu du post */}
                 <p style={{ marginBottom: '0.75rem' }}>{post.content}</p>
+
+                {/* Actions */}
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
-                  <button onClick={() => toggleLike(post.id)} style={{ background: 'none', cursor: 'pointer', fontSize: '0.85rem' }}>
-                    {post.likedBy?.includes(user.uid) ? '❤️' : '🤍'} {post.likes}
+                  <button onClick={() => toggleLike(post.id)} style={{ background: 'none', cursor: 'pointer', fontSize: '0.85rem', border: 'none' }}>
+                    {(post.likedBy || []).includes(user.uid) ? '❤️' : '🤍'} {post.likes}
                   </button>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>💬 {post.comments}</span>
+                  <button onClick={() => toggleComments(post.id)} style={{ background: 'none', cursor: 'pointer', fontSize: '0.85rem', border: 'none', color: 'var(--text-muted)' }}>
+                    💬 {post.comments}
+                  </button>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input
-                    className="input"
-                    placeholder="Commenter..."
-                    value={commentText[post.id] || ''}
-                    onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
-                    style={{ flex: 1 }}
-                  />
-                  <button className="btn btn-primary" onClick={() => submitComment(post.id)}>Envoyer</button>
-                </div>
+
+                {/* Commentaires */}
+                {showComments[post.id] && (
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
+                    {(comments[post.id] || []).map(comment => (
+                      <div key={comment.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', padding: '0.5rem', background: 'var(--blue-pale)', borderRadius: 'var(--radius-sm)' }}>
+                        <div className="avatar avatar-sm" style={{ background: comment.userAvatarBg || '#1B4FD8', fontSize: '0.6rem' }}>
+                          {comment.userInitials}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <strong style={{ fontSize: '0.8rem' }}>{comment.userName}</strong>
+                          <p style={{ fontSize: '0.85rem', margin: '0.15rem 0' }}>{comment.content}</p>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{comment.time}</span>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Input commentaire */}
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <input
+                        className="input"
+                        placeholder="Écrire un commentaire..."
+                        value={commentText[post.id] || ''}
+                        onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                        style={{ flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
+                      />
+                      <button className="btn btn-primary" onClick={() => submitComment(post.id)} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                        Envoyer
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -123,4 +196,3 @@ const FeedPage = () => {
 };
 
 export default FeedPage;
-

@@ -121,17 +121,22 @@ export const groupService = {
   },
 
   async checkMembership(groupId, userId) {
+  try {
     const snap = await getDoc(doc(db, GROUPS, groupId));
-    if (!snap.exists()) return { success: false };
+    if (!snap.exists()) return { success: false, error: 'Groupe non trouvé' };
     const data = snap.data();
     return {
       success: true,
-      isMember: data.membersList?.includes(userId),
-      isAdmin: data.admins?.includes(userId),
-      isPending: data.pendingRequests?.includes(userId),
-      role: data.admins?.includes(userId) ? 'admin' : 'member'
+      data: {
+        isMember: data.membersList?.includes(userId) || false,
+        isAdmin: data.admins?.includes(userId) || false
+      }
     };
-  },
+  } catch (err) {
+    console.error('Erreur checkMembership:', err);
+    return { success: false, error: err.message };
+  }
+},
 
   async addAdmin(groupId, userId) {
     const ref = doc(db, GROUPS, groupId);

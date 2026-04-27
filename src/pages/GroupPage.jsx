@@ -13,7 +13,6 @@ const GroupPage = () => {
   const [posts, setPosts] = useState([]);
   const [message, setMessage] = useState('');
   const [isMember, setIsMember] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
 
@@ -29,10 +28,14 @@ const GroupPage = () => {
     const gResult = await groupService.getGroup(id);
     if (gResult.success) {
       setGroup(gResult.data);
-      const mResult = await groupService.checkMembership(id, user.uid);
-      if (mResult.success) {
-        setIsMember(mResult.data.isMember);
-        setIsAdmin(mResult.data.isAdmin);
+      
+      if (user && user.uid) {
+        const mResult = await groupService.checkMembership(id, user.uid);
+        if (mResult && mResult.success && mResult.data) {
+          setIsMember(mResult.data.isMember || false);
+        } else {
+          setIsMember(false);
+        }
       }
     }
 
@@ -41,9 +44,16 @@ const GroupPage = () => {
     setLoading(false);
   };
 
+  const joinGroup = async () => {
+    const result = await groupService.joinGroup(id, user.uid);
+    if (result.success) {
+      setIsMember(true);
+      loadGroup();
+    }
+  };
+
   const sendMessage = async () => {
     if (!message.trim()) return;
-
     await postService.createPost({
       groupId: id,
       authorId: user.uid,
@@ -53,27 +63,7 @@ const GroupPage = () => {
       content: message.trim(),
       type: 'chat'
     });
-
     setMessage('');
-    loadGroup();
-  };
-
-  const joinGroup = async () => {
-    const result = await groupService.requestJoin(id, user.uid);
-    if (result.success) {
-      if (result.requestSent) alert('✅ Demande envoyée !');
-      if (result.alreadyRequested) alert('⏳ Demande déjà en attente');
-      loadGroup();
-    }
-  };
-
-  const approveMember = async (memberId) => {
-    await groupService.approveRequest(id, memberId);
-    loadGroup();
-  };
-
-  const rejectMember = async (memberId) => {
-    await groupService.rejectRequest(id, memberId);
     loadGroup();
   };
 
@@ -106,19 +96,6 @@ const GroupPage = () => {
           )}
         </div>
 
-        {isAdmin && group?.pendingRequests?.length > 0 && (
-          <div style={{ padding: '1rem', background: 'var(--orange-light)', margin: '0.5rem 1rem', borderRadius: 'var(--radius-sm)' }}>
-            <strong>⏳ Demandes en attente ({group.pendingRequests.length})</strong>
-            {group.pendingRequests.map(memberId => (
-              <div key={memberId} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <span style={{ fontSize: '0.85rem' }}>{memberId}</span>
-                <button className="btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', background: 'var(--green)', color: '#fff', borderRadius: '100px' }} onClick={() => approveMember(memberId)}>✓ Accepter</button>
-                <button className="btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', background: 'var(--red)', color: '#fff', borderRadius: '100px' }} onClick={() => rejectMember(memberId)}>✗ Refuser</button>
-              </div>
-            ))}
-          </div>
-        )}
-
         <div className="group-messages">
           {posts.length === 0 ? (
             <div className="empty-state">
@@ -128,7 +105,10 @@ const GroupPage = () => {
             </div>
           ) : (
             posts.map(post => (
-              <div key={post.id} className={`msg-row ${post.authorId === user.uid ? 'mine' : 'theirs'}`}>
+              <div
+                key={post.id}
+                className={`msg-row ${post.authorId === user.uid ? 'mine' : 'theirs'}`}
+              >
                 {post.authorId !== user.uid && (
                   <div className="avatar avatar-sm" style={{ background: post.authorAvatarBg }}>
                     {post.authorInitials}
