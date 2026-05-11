@@ -14,6 +14,7 @@ const CreateGroupPage = lazy(() => import('./pages/CreateGroupPage'));
 const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 const EventsPage = lazy(() => import('./pages/EventsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const ResourcesPage = lazy(() => import('./pages/ResourcesPage'));
 
 const Loading = () => (
   <div className="loading-spinner">
@@ -72,6 +73,12 @@ function App() {
                 <><Navbar /><ProfilePage /></>
               </ProtectedRoute>
             } />
+
+            <Route path="/resources" element={
+  <ProtectedRoute>
+    <ResourcesPage />
+  </ProtectedRoute>
+} />
 
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />

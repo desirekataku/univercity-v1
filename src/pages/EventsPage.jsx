@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { eventService } from '../services/eventService';
 import { groupService } from '../services/groupService';
+import { eventService } from '../services/eventService';
 import Navbar from '../components/Navbar';
 import './EventsPage.css';
 
@@ -20,14 +20,13 @@ const EventsPage = () => {
   }, [user]);
 
   const loadData = async () => {
-    // Récupérer tous les événements (pas filtrés par groupe)
-    const eResult = await eventService.getAllEvents();
-    if (eResult.success) setEvents(eResult.data);
-
-    // Récupérer les groupes pour le formulaire de création
     const gResult = await groupService.getUserGroups(user.uid);
-    if (gResult.success) setGroups(gResult.data);
-
+    if (gResult.success) {
+      setGroups(gResult.data);
+      const groupIds = gResult.data.map(g => g.id);
+      const eResult = await eventService.getUserEvents(groupIds);
+      if (eResult.success) setEvents(eResult.data);
+    }
     setLoading(false);
   };
 
@@ -71,7 +70,7 @@ const EventsPage = () => {
 
         <main>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h2>📅 Tous les événements</h2>
+            <h2>📅 Événements</h2>
             <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
               + Créer un événement
             </button>
@@ -81,7 +80,7 @@ const EventsPage = () => {
             <div className="empty-state">
               <div className="empty-icon">📅</div>
               <div className="empty-title">Aucun événement</div>
-              <div className="empty-sub">Créez un événement pour votre groupe !</div>
+              <div className="empty-sub">Créez un événement pour votre groupe</div>
             </div>
           ) : (
             <div className="events-list">
@@ -92,10 +91,7 @@ const EventsPage = () => {
                     📅 {new Date(event.eventDate?.toDate?.() || event.eventDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                     {event.location && ` · 📍 ${event.location}`}
                   </div>
-                  <p style={{ marginBottom: '0.25rem' }}>{event.description}</p>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--blue)', marginBottom: '0.75rem' }}>
-                    👤 Organisé par {event.organizerName}
-                  </p>
+                  <p style={{ marginBottom: '0.75rem' }}>{event.description}</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span className="text-muted" style={{ fontSize: '0.85rem' }}>
                       👥 {event.participantsCount || 0} participants
@@ -159,3 +155,4 @@ const EventsPage = () => {
 };
 
 export default EventsPage;
+
