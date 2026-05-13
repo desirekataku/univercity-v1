@@ -16,7 +16,6 @@ export default async function handler(req, res) {
   
   try {
     // Extraire le public_id de l'URL Cloudinary
-    // Exemple: https://res.cloudinary.com/dgil48bqm/raw/upload/v123456/univercity/resources/abc.pdf
     const regex = /\/raw\/upload\/v\d+\/(.+)\.pdf$/;
     const matches = url.match(regex);
     
@@ -28,7 +27,6 @@ export default async function handler(req, res) {
     
     // Générer la signature (valable 5 minutes)
     const timestamp = Math.floor(Date.now() / 1000);
-    const expiresAt = timestamp + 300;
     
     // Chaîne à signer
     const stringToSign = `public_id=${publicId}&timestamp=${timestamp}`;
@@ -47,7 +45,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
       success: true, 
       url: signedUrl,
-      expiresAt 
+      expiresAt: timestamp + 300
     });
     
   } catch (error) {
