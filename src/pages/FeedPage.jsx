@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// src/pages/FeedPage.jsx
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { groupService } from '../services/groupService';
@@ -11,23 +12,48 @@ const FeedPage = () => {
   const [posts, setPosts] = useState([]);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [newPost, setNewPost] = useState({ content: '', groupId: '' });
   const [commentText, setCommentText] = useState({});
   const [comments, setComments] = useState({});
   const [showComments, setShowComments] = useState({});
+  const [showCommentInput, setShowCommentInput] = useState({});
+  const [posting, setPosting] = useState(false);
+  const [filterGroup, setFilterGroup] = useState('all');
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (user) loadFeed();
   }, [user]);
 
+  useEffect(() => {
+    filterPosts();
+  }, [posts, filterGroup]);
+
   const loadFeed = async () => {
+    setLoading(true);
+    
+    // Charger les groupes de l'utilisateur
     const gResult = await groupService.getUserGroups(user.uid);
     if (gResult.success) {
       setGroups(gResult.data);
       const groupIds = gResult.data.map(g => g.id);
+      
+      // Charger les publications
       const pResult = await postService.getFeedPosts(user.uid, groupIds);
-      if (pResult.success) setPosts(pResult.data);
+      if (pResult.success) {
+        setPosts(pResult.data);
+      }
     }
+    
     setLoading(false);
+  };
+
+  const filterPosts = () => {
+    if (filterGroup === 'all') {
+      return;
+    }
+    // Le filtrage se fait dans l'affichage
   };
 
   const getGroupName = (groupId) => {
@@ -37,7 +63,41 @@ const FeedPage = () => {
 
   const getGroupBg = (groupId) => {
     const group = groups.find(g => g.id === groupId);
-    return group?.bg || '#1B4FD8';
+    return group?.bg || '#6c63ff';
+  };
+
+  const handleCreatePost = async (e) => {
+    e.preventDefault();
+    if (!newPost.content.trim()) {
+      alert('Le message ne peut pas être vide');
+      return;
+    }
+    if (!newPost.groupId) {
+      alert('Veuillez sélectionner un groupe');
+      return;
+    }
+    
+    setPosting(true);
+    
+    const result = await postService.createPost({
+      groupId: newPost.groupId,
+      authorId: user.uid,
+      authorName: user.name,
+      authorInitials: user.initials,
+      authorAvatarBg: user.avatarBg || '#6c63ff',
+      content: newPost.content.trim(),
+      type: 'chat'
+    });
+    
+    if (result.success) {
+      setNewPost({ content: '', groupId: '' });
+      setShowCreatePost(false);
+      loadFeed();
+    } else {
+      alert('Erreur lors de la création du post');
+    }
+    
+    setPosting(false);
   };
 
   const toggleLike = async (postId) => {
@@ -46,7 +106,7 @@ const FeedPage = () => {
       setPosts(prev => prev.map(p =>
         p.id === postId ? { 
           ...p, 
-          likes: result.liked ? p.likes + 1 : p.likes - 1, 
+          likes: result.liked ? (p.likes || 0) + 1 : (p.likes || 0) - 1, 
           likedBy: result.liked ? [...(p.likedBy || []), user.uid] : (p.likedBy || []).filter(id => id !== user.uid) 
         } : p
       ));
@@ -63,9 +123,15 @@ const FeedPage = () => {
   const toggleComments = (postId) => {
     setShowComments(prev => {
       const newState = { ...prev, [postId]: !prev[postId] };
-      if (newState[postId]) loadComments(postId);
+      if (newState[postId]) {
+        loadComments(postId);
+      }
       return newState;
     });
+  };
+
+  const toggleCommentInput = (postId) => {
+    setShowCommentInput(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
   const submitComment = async (postId) => {
@@ -76,120 +142,293 @@ const FeedPage = () => {
       userId: user.uid,
       userName: user.name,
       userInitials: user.initials,
+      userAvatarBg: user.avatarBg || '#6c63ff',
       content: text
     });
 
     setCommentText(prev => ({ ...prev, [postId]: '' }));
+    setShowCommentInput(prev => ({ ...prev, [postId]: false }));
     loadComments(postId);
     loadFeed();
   };
 
-  if (loading) return <div className="loading-spinner"><div className="spinner"></div></div>;
+  const handleKeyPress = (e, postId) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submitComment(postId);
+    }
+  };
+
+  const getFilteredPosts = () => {
+    if (filterGroup === 'all') {
+      return posts;
+    }
+    return posts.filter(post => post.groupId === filterGroup);
+  };
+
+  const filteredPosts = getFilteredPosts();
+
+  if (loading) {
+    return (
+      <div className="loading-spinner">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="feed-page">
       <Navbar />
-      <div className="app-layout">
-        <aside className="sidebar-left">
-          <div className="card" style={{ padding: '1rem' }}>
-            <h3 style={{ marginBottom: '0.75rem' }}>Mes groupes</h3>
-            {groups.map(g => (
-              <Link key={g.id} to={`/group/${g.id}`} className="group-mini">
-                <div className="avatar" style={{ background: g.bg || '#1B4FD8' }}>{g.name?.charAt(0)}</div>
-                <div>
-                  <div className="group-mini-name">{g.name}</div>
-                  <div className="group-mini-meta">{g.members} membres</div>
-                </div>
-              </Link>
-            ))}
-            <Link to="/create-group" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+      
+      <div className="feed-container">
+        {/* Sidebar gauche - Mes groupes */}
+        <aside className="feed-sidebar">
+          <div className="sidebar-card">
+            <div className="sidebar-header">
+              <h3>📁 Mes groupes</h3>
+              <Link to="/explore" className="explore-link">+ Explorer</Link>
+            </div>
+            
+            <div className="groups-list">
+              <button 
+                className={`group-item ${filterGroup === 'all' ? 'active' : ''}`}
+                onClick={() => setFilterGroup('all')}
+              >
+                <span className="group-icon">🌐</span>
+                <span className="group-name">Tous les groupes</span>
+                <span className="group-count">{posts.length}</span>
+              </button>
+              
+              {groups.map(g => (
+                <button
+                  key={g.id}
+                  className={`group-item ${filterGroup === g.id ? 'active' : ''}`}
+                  onClick={() => setFilterGroup(g.id)}
+                >
+                  <div className="group-avatar" style={{ background: g.bg || '#6c63ff' }}>
+                    {g.name?.charAt(0)}
+                  </div>
+                  <span className="group-name">{g.name}</span>
+                  <span className="group-count">
+                    {posts.filter(p => p.groupId === g.id).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+            
+            <Link to="/create-group" className="create-group-btn">
               + Créer un groupe
             </Link>
           </div>
         </aside>
 
-        <main>
-          {posts.length === 0 ? (
-            <div className="empty-state">
+        {/* Feed principal */}
+        <main className="feed-main">
+          {/* Bouton création publication */}
+          <div className="create-post-card">
+            <div className="create-post-input">
+              <div className="user-avatar" style={{ background: user?.avatarBg || '#6c63ff' }}>
+                {user?.initials || 'U'}
+              </div>
+              <button 
+                className="create-post-btn"
+                onClick={() => setShowCreatePost(true)}
+              >
+                Quoi de neuf, {user?.name?.split(' ')[0]} ?
+              </button>
+            </div>
+          </div>
+
+          {/* Modal création publication */}
+          {showCreatePost && (
+            <div className="modal-overlay" onClick={() => setShowCreatePost(false)}>
+              <div className="modal modal-post" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3>✏️ Créer une publication</h3>
+                  <button className="modal-close" onClick={() => setShowCreatePost(false)}>✕</button>
+                </div>
+                
+                <form onSubmit={handleCreatePost}>
+                  <div className="form-group">
+                    <label>Groupe *</label>
+                    <select
+                      className="input"
+                      value={newPost.groupId}
+                      onChange={(e) => setNewPost({ ...newPost, groupId: e.target.value })}
+                      required
+                    >
+                      <option value="">Sélectionner un groupe</option>
+                      {groups.map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Message</label>
+                    <textarea
+                      className="input"
+                      rows="4"
+                      placeholder="Partagez quelque chose avec votre groupe..."
+                      value={newPost.content}
+                      onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="modal-buttons">
+                    <button type="button" className="btn-secondary" onClick={() => setShowCreatePost(false)}>
+                      Annuler
+                    </button>
+                    <button type="submit" className="btn-primary" disabled={posting}>
+                      {posting ? 'Publication...' : '📤 Publier'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Liste des publications */}
+          {filteredPosts.length === 0 ? (
+            <div className="empty-feed">
               <div className="empty-icon">📝</div>
-              <div className="empty-title">Aucune publication</div>
-              <div className="empty-sub">Rejoignez un groupe pour voir des publications</div>
-              <Link to="/explore" className="btn btn-primary">Explorer les groupes</Link>
+              <h3>Aucune publication</h3>
+              <p>Rejoignez des groupes pour voir des publications</p>
+              <Link to="/explore" className="btn btn-primary">
+                Explorer les groupes
+              </Link>
             </div>
           ) : (
-            posts.map(post => (
-              <div key={post.id} className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
-                {/* En-tête du post */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                  <div className="avatar" style={{ background: post.authorAvatarBg || '#1B4FD8' }}>
-                    {post.authorInitials}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <strong>{post.authorName}</strong>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
-                      <span className="text-muted" style={{ fontSize: '0.8rem' }}>{post.time}</span>
-                      <span style={{
-                        background: getGroupBg(post.groupId),
-                        color: '#fff',
-                        padding: '0.1rem 0.5rem',
-                        borderRadius: '100px',
-                        fontSize: '0.7rem',
-                        fontWeight: 600
-                      }}>
-                        📢 {getGroupName(post.groupId)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contenu du post */}
-                <p style={{ marginBottom: '0.75rem' }}>{post.content}</p>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
-                  <button onClick={() => toggleLike(post.id)} style={{ background: 'none', cursor: 'pointer', fontSize: '0.85rem', border: 'none' }}>
-                    {(post.likedBy || []).includes(user.uid) ? '❤️' : '🤍'} {post.likes}
-                  </button>
-                  <button onClick={() => toggleComments(post.id)} style={{ background: 'none', cursor: 'pointer', fontSize: '0.85rem', border: 'none', color: 'var(--text-muted)' }}>
-                    💬 {post.comments}
-                  </button>
-                </div>
-
-                {/* Commentaires */}
-                {showComments[post.id] && (
-                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
-                    {(comments[post.id] || []).map(comment => (
-                      <div key={comment.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', padding: '0.5rem', background: 'var(--blue-pale)', borderRadius: 'var(--radius-sm)' }}>
-                        <div className="avatar avatar-sm" style={{ background: comment.userAvatarBg || '#1B4FD8', fontSize: '0.6rem' }}>
-                          {comment.userInitials}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <strong style={{ fontSize: '0.8rem' }}>{comment.userName}</strong>
-                          <p style={{ fontSize: '0.85rem', margin: '0.15rem 0' }}>{comment.content}</p>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{comment.time}</span>
+            <div className="posts-list">
+              {filteredPosts.map(post => (
+                <div key={post.id} className="post-card">
+                  {/* En-tête */}
+                  <div className="post-header">
+                    <div className="post-author">
+                      <div className="author-avatar" style={{ background: post.authorAvatarBg || '#6c63ff' }}>
+                        {post.authorInitials}
+                      </div>
+                      <div className="author-info">
+                        <strong>{post.authorName}</strong>
+                        <div className="post-meta">
+                          <span className="post-time">{post.time}</span>
+                          <span className="post-group" style={{ background: getGroupBg(post.groupId) }}>
+                            📢 {getGroupName(post.groupId)}
+                          </span>
                         </div>
                       </div>
-                    ))}
-
-                    {/* Input commentaire */}
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                      <input
-                        className="input"
-                        placeholder="Écrire un commentaire..."
-                        value={commentText[post.id] || ''}
-                        onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
-                        style={{ flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
-                      />
-                      <button className="btn btn-primary" onClick={() => submitComment(post.id)} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                        Envoyer
-                      </button>
                     </div>
                   </div>
-                )}
-              </div>
-            ))
+
+                  {/* Contenu */}
+                  <div className="post-content">
+                    <p>{post.content}</p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="post-actions">
+                    <button 
+                      className={`action-btn like ${(post.likedBy || []).includes(user.uid) ? 'active' : ''}`}
+                      onClick={() => toggleLike(post.id)}
+                    >
+                      {(post.likedBy || []).includes(user.uid) ? '❤️' : '🤍'} 
+                      <span>{post.likes || 0}</span>
+                    </button>
+                    <button 
+                      className="action-btn comment"
+                      onClick={() => toggleComments(post.id)}
+                    >
+                      💬 <span>{post.comments || 0}</span>
+                    </button>
+                  </div>
+
+                  {/* Section commentaires */}
+                  {showComments[post.id] && (
+                    <div className="comments-section">
+                      {/* Liste des commentaires */}
+                      <div className="comments-list">
+                        {(comments[post.id] || []).map(comment => (
+                          <div key={comment.id} className="comment-item">
+                            <div className="comment-avatar" style={{ background: comment.userAvatarBg || '#6c63ff' }}>
+                              {comment.userInitials}
+                            </div>
+                            <div className="comment-bubble">
+                              <strong>{comment.userName}</strong>
+                              <p>{comment.content}</p>
+                              <span className="comment-time">{comment.time}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Input commentaire */}
+                      {showCommentInput[post.id] ? (
+                        <div className="comment-input-wrapper">
+                          <div className="comment-avatar" style={{ background: user?.avatarBg || '#6c63ff' }}>
+                            {user?.initials || 'U'}
+                          </div>
+                          <div className="comment-input-container">
+                            <textarea
+                              className="comment-input"
+                              placeholder="Écrire un commentaire..."
+                              value={commentText[post.id] || ''}
+                              onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                              onKeyPress={(e) => handleKeyPress(e, post.id)}
+                              rows="1"
+                            />
+                            <button 
+                              className="comment-send"
+                              onClick={() => submitComment(post.id)}
+                            >
+                              Envoyer
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button 
+                          className="add-comment-btn"
+                          onClick={() => toggleCommentInput(post.id)}
+                        >
+                          💬 Ajouter un commentaire
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </main>
+
+        {/* Sidebar droite - Suggestions */}
+        <aside className="feed-sidebar-right">
+          <div className="sidebar-card">
+            <h3>👥 Suggestions</h3>
+            <div className="suggestions-list">
+              <div className="suggestion-item">
+                <div className="suggestion-avatar" style={{ background: '#10b981' }}>
+                  📚
+                </div>
+                <div className="suggestion-info">
+                  <strong>Groupe d'étude L2</strong>
+                  <span>234 membres</span>
+                </div>
+                <button className="suggest-join">Rejoindre</button>
+              </div>
+              <div className="suggestion-item">
+                <div className="suggestion-avatar" style={{ background: '#f59e0b' }}>
+                  ⚽
+                </div>
+                <div className="suggestion-info">
+                  <strong>Sport Campus</strong>
+                  <span>89 membres</span>
+                </div>
+                <button className="suggest-join">Rejoindre</button>
+              </div>
+            </div>
+            <Link to="/explore" className="more-link">Voir plus →</Link>
+          </div>
+        </aside>
       </div>
     </div>
   );

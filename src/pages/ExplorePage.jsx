@@ -1,3 +1,4 @@
+// src/pages/ExplorePage.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -9,117 +10,295 @@ import './ExplorePage.css';
 const ExplorePage = () => {
   const { user } = useAuth();
   const [groups, setGroups] = useState([]);
+  const [filteredGroups, setFilteredGroups] = useState([]);
   const [people, setPeople] = useState([]);
-  const [search, setSearch] = useState('');
+  const [filteredPeople, setFilteredPeople] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('groups'); // groups, people
   const [loading, setLoading] = useState(true);
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [joinLoading, setJoinLoading] = useState({});
+
+  // Catégories de groupes
+  const categories = [
+    { id: 'all', name: 'Tous', icon: '🌐' },
+    { id: 'study', name: 'Étude', icon: '📚' },
+    { id: 'sports', name: 'Sports', icon: '⚽' },
+    { id: 'arts', name: 'Arts', icon: '🎨' },
+    { id: 'tech', name: 'Tech', icon: '💻' },
+    { id: 'social', name: 'Social', icon: '👥' }
+  ];
 
   useEffect(() => {
-    loadAll();
+    loadData();
   }, []);
 
-  const loadAll = async () => {
-    const gResult = await groupService.getAllGroups();
-    if (gResult.success) setGroups(gResult.data);
+  useEffect(() => {
+    applyFilters();
+  }, [groups, people, searchTerm, categoryFilter, activeTab]);
+
+  const loadData = async () => {
+    setLoading(true);
     
-    const pResult = await userService.getSuggestedUsers(user.uid);
-    if (pResult.success) setPeople(pResult.data);
+    // Charger tous les groupes publics
+    const gResult = await groupService.getAllGroups();
+    if (gResult.success) {
+      setGroups(gResult.data);
+      setFilteredGroups(gResult.data);
+    }
+    
+    // Charger les suggestions d'utilisateurs
+    const pResult = await userService.getSuggestedUsers(user?.uid);
+    if (pResult.success) {
+      setPeople(pResult.data);
+      setFilteredPeople(pResult.data);
+    }
     
     setLoading(false);
   };
 
-  const handleSearch = async () => {
-    if (!search.trim()) {
-      loadAll();
-      return;
+  const applyFilters = () => {
+    // Filtre groupes
+    let filteredG = [...groups];
+    
+    // Recherche textuelle
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filteredG = filteredG.filter(g => 
+        g.name?.toLowerCase().includes(term) ||
+        g.description?.toLowerCase().includes(term)
+      );
     }
-    const result = await groupService.searchGroups(search);
-    if (result.success) setGroups(result.data);
+    
+    // Filtre par catégorie (si implémenté dans les groupes)
+    if (categoryFilter !== 'all') {
+      filteredG = filteredG.filter(g => g.category === categoryFilter);
+    }
+    
+    setFilteredGroups(filteredG);
+    
+    // Filtre personnes
+    let filteredP = [...people];
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filteredP = filteredP.filter(p => 
+        p.name?.toLowerCase().includes(term) ||
+        p.promotion?.toLowerCase().includes(term)
+      );
+    }
+    setFilteredPeople(filteredP);
   };
 
-  const joinGroup = async (groupId) => {
-    await groupService.joinGroup(groupId, user.uid);
-    loadAll();
+  const handleJoinGroup = async (groupId) => {
+    setJoinLoading(prev => ({ ...prev, [groupId]: true }));
+    
+    const result = await groupService.joinGroup(groupId, user.uid);
+    if (result.success) {
+      // Mettre à jour l'état local
+      setGroups(prev => prev.map(g => 
+        g.id === groupId 
+          ? { ...g, members: (g.members || 0) + 1, isMember: true }
+          : g
+      ));
+    } else {
+      alert(result.error || 'Erreur lors de l\'inscription');
+    }
+    
+    setJoinLoading(prev => ({ ...prev, [groupId]: false }));
   };
 
-  if (loading) return <div className="loading-spinner"><div className="spinner"></div></div>;
+  const handleFollowUser = async (userId) => {
+    const result = await userService.followUser(user.uid, userId);
+    if (result.success) {
+      setPeople(prev => prev.map(p => 
+        p.uid === userId 
+          ? { ...p, isFollowing: true, followers: (p.followers || 0) + 1 }
+          : p
+      ));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-spinner">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="explore-page">
       <Navbar />
-      <div className="app-layout">
-        <aside className="sidebar-left">
-          <div className="card" style={{ padding: '1rem' }}>
-            <h3 style={{ marginBottom: '0.75rem' }}>Filtres</h3>
-            <Link to="/create-group" className="btn btn-primary" style={{ width: '100%' }}>
-              + Créer un groupe
-            </Link>
+      
+      <div className="explore-container">
+        {/* Header */}
+        <div className="explore-header">
+          <h1>🔍 Explorer</h1>
+          <p className="explore-subtitle">
+            Découvrez des groupes et connectez-vous avec d'autres étudiants
+          </p>
+        </div>
+
+        {/* Barre de recherche */}
+        <div className="explore-search">
+          <div className="search-wrapper">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Rechercher un groupe, une personne, une matière..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button className="search-clear" onClick={() => setSearchTerm('')}>
+                ✕
+              </button>
+            )}
           </div>
-        </aside>
+        </div>
 
-        <main>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input
-                className="input"
-                placeholder="Rechercher un groupe..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <button className="btn btn-primary" onClick={handleSearch}>Rechercher</button>
-            </div>
-          </div>
+        {/* Onglets */}
+        <div className="explore-tabs">
+          <button 
+            className={`tab-btn ${activeTab === 'groups' ? 'active' : ''}`}
+            onClick={() => setActiveTab('groups')}
+          >
+            🏛️ Groupes ({filteredGroups.length})
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'people' ? 'active' : ''}`}
+            onClick={() => setActiveTab('people')}
+          >
+            👥 Personnes ({filteredPeople.length})
+          </button>
+        </div>
 
-          <h3 style={{ marginBottom: '1rem' }}>🏛️ Groupes à découvrir</h3>
-          {groups.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🔍</div>
-              <div className="empty-title">Aucun groupe trouvé</div>
-              <Link to="/create-group" className="btn btn-primary">Créer le premier groupe</Link>
-            </div>
-          ) : (
-            <div className="groups-grid">
-              {groups.map(group => (
-                <div key={group.id} className="card" style={{ padding: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                    <div className="avatar avatar-lg" style={{ background: group.bg || '#1B4FD8' }}>
-                      {group.name?.charAt(0)}
-                    </div>
-                    <div>
-                      <Link to={`/group/${group.id}`} style={{ fontWeight: 600, textDecoration: 'none', color: 'inherit' }}>
-                        {group.name}
-                      </Link>
-                      <div className="text-muted" style={{ fontSize: '0.8rem' }}>{group.members} membres</div>
-                    </div>
-                  </div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                    {group.description || 'Groupe de discussion et partage'}
-                  </p>
-                  <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => joinGroup(group.id)}>
-                    Rejoindre
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <h3 style={{ margin: '1.5rem 0 1rem' }}>👥 Personnes</h3>
-          <div className="people-grid">
-            {people.slice(0, 6).map(person => (
-              <Link key={person.id} to={`/profile/${person.uid}`} className="card" style={{ padding: '1rem', textAlign: 'center', textDecoration: 'none', color: 'inherit' }}>
-                <div className="avatar avatar-lg" style={{ background: person.avatarBg || '#1B4FD8', margin: '0 auto 0.5rem' }}>
-                  {person.initials}
-                </div>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{person.name}</div>
-                <div className="text-muted" style={{ fontSize: '0.8rem' }}>{person.promotion || 'Étudiant'}</div>
-              </Link>
+        {/* Filtres catégories (visible seulement pour les groupes) */}
+        {activeTab === 'groups' && (
+          <div className="category-filters">
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                className={`category-chip ${categoryFilter === cat.id ? 'active' : ''}`}
+                onClick={() => setCategoryFilter(cat.id)}
+              >
+                <span>{cat.icon}</span> {cat.name}
+              </button>
             ))}
           </div>
-        </main>
+        )}
+
+        {/* Contenu principal */}
+        <div className="explore-content">
+          {activeTab === 'groups' && (
+            <>
+              {filteredGroups.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">🏛️</div>
+                  <h3>Aucun groupe trouvé</h3>
+                  <p>Sois le premier à créer un groupe !</p>
+                  <Link to="/create-group" className="btn btn-primary">
+                    + Créer un groupe
+                  </Link>
+                </div>
+              ) : (
+                <div className="groups-grid">
+                  {filteredGroups.map(group => (
+                    <div key={group.id} className="group-card">
+                      {/* Couleur d'en-tête */}
+                      <div className="group-card-header" style={{ background: group.bg || '#6c63ff' }}>
+                        <div className="group-card-icon">
+                          {group.name?.charAt(0).toUpperCase()}
+                        </div>
+                      </div>
+                      
+                      <div className="group-card-content">
+                        <h3 className="group-card-name">{group.name}</h3>
+                        <p className="group-card-description">
+                          {group.description || 'Aucune description'}
+                        </p>
+                        
+                        <div className="group-card-stats">
+                          <span>👥 {group.members || 0} membres</span>
+                          <span>📝 {group.posts || 0} publications</span>
+                        </div>
+                        
+                        <div className="group-card-actions">
+                          <Link to={`/group/${group.id}`} className="btn-view">
+                            Voir le groupe
+                          </Link>
+                          {!group.isMember && (
+                            <button 
+                              className="btn-join"
+                              onClick={() => handleJoinGroup(group.id)}
+                              disabled={joinLoading[group.id]}
+                            >
+                              {joinLoading[group.id] ? '...' : 'Rejoindre'}
+                            </button>
+                          )}
+                          {group.isMember && (
+                            <span className="member-badge">Membre ✓</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'people' && (
+            <>
+              {filteredPeople.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">👥</div>
+                  <h3>Aucune personne trouvée</h3>
+                  <p>Invite tes amis à rejoindre la plateforme !</p>
+                </div>
+              ) : (
+                <div className="people-grid">
+                  {filteredPeople.map(person => (
+                    <div key={person.uid} className="person-card">
+                      <div className="person-avatar" style={{ background: person.avatarBg || '#6c63ff' }}>
+                        {person.initials || person.name?.charAt(0) || 'U'}
+                      </div>
+                      
+                      <h4 className="person-name">{person.name}</h4>
+                      <p className="person-promotion">{person.promotion || 'Étudiant'}</p>
+                      
+                      <div className="person-stats">
+                        <span>📚 {person.resourcesCount || 0} ressources</span>
+                        <span>👥 {person.followers || 0} abonnés</span>
+                      </div>
+                      
+                      <div className="person-actions">
+                        <Link to={`/profile/${person.uid}`} className="btn-view-profile">
+                          Voir profil
+                        </Link>
+                        {!person.isFollowing && (
+                          <button 
+                            className="btn-follow"
+                            onClick={() => handleFollowUser(person.uid)}
+                          >
+                            + Suivre
+                          </button>
+                        )}
+                        {person.isFollowing && (
+                          <span className="following-badge">✓ Suivi</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
 export default ExplorePage;
-
