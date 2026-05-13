@@ -251,3 +251,118 @@
     justify-content: center;
   }
 }
+
+/* src/components/ResourceCard.css */
+
+/* Bouton supprimer sur la carte */
+.card-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-delete-btn:hover {
+  background: #ef4444;
+  transform: scale(1.05);
+}
+
+/* Modal confirmation */
+.delete-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-confirm-modal {
+  background: #111318;
+  border: 1px solid #2a2d35;
+  border-radius: 20px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.delete-confirm-modal h4 {
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.delete-confirm-modal p {
+  color: #cbd5e1;
+  margin-bottom: 0.5rem;
+}
+
+.delete-confirm-modal .warning-text {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.delete-confirm-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.delete-confirm-buttons .btn-cancel {
+  background: #1a1d24;
+  border: 1px solid #2a2d35;
+  padding: 0.6rem 1.2rem;
+  border-radius: 100px;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.delete-confirm-buttons .btn-danger {
+  background: #ef4444;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 100px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-confirm-buttons .btn-danger:hover {
+  background: #dc2626;
+  transform: scale(1.02);
+}
+
+/* Pour les cartes en mode liste */
+.resource-card-list {
+  position: relative;
+}
+
+.resource-card-list .action-btn.delete {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.resource-card-list .action-btn.delete:hover {
+  background: #ef4444;
+  color: white;
+}

@@ -24,9 +24,8 @@ const ResourcesPage = () => {
     groupId: 'all'
   });
   const [topContributors, setTopContributors] = useState([]);
-  const [viewMode, setViewMode] = useState('grid'); // grid or list
+  const [viewMode, setViewMode] = useState('grid');
 
-  // Options pour filtres
   const types = [
     { value: 'all', label: 'Tous', icon: '📚' },
     { value: 'pdf', label: 'PDF', icon: '📄' },
@@ -53,15 +52,12 @@ const ResourcesPage = () => {
   const loadData = async () => {
     setLoading(true);
     
-    // Charger ressources
     const resResult = await resourceService.getResources();
     if (resResult.success) setResources(resResult.data);
     
-    // Charger groupes de l'utilisateur
     const groupResult = await groupService.getUserGroups(user?.uid);
     if (groupResult.success) setGroups(groupResult.data);
     
-    // Charger top contributeurs
     const topResult = await resourceService.getTopContributors(5);
     if (topResult.success) setTopContributors(topResult.data);
     
@@ -71,27 +67,18 @@ const ResourcesPage = () => {
   const applyFilters = () => {
     let filtered = [...resources];
     
-    // Filtre par type
     if (filters.type !== 'all') {
       filtered = filtered.filter(r => r.type === filters.type);
     }
-    
-    // Filtre par matière
     if (filters.subject !== 'all') {
       filtered = filtered.filter(r => r.subject === filters.subject);
     }
-    
-    // Filtre par niveau
     if (filters.level !== 'all') {
       filtered = filtered.filter(r => r.level === filters.level);
     }
-    
-    // Filtre par groupe
     if (filters.groupId !== 'all') {
       filtered = filtered.filter(r => r.groupId === filters.groupId);
     }
-    
-    // Recherche
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(r => 
@@ -121,15 +108,37 @@ const ResourcesPage = () => {
     }
   };
 
- 
+  const handleDownload = async (resource) => {
+    const result = await resourceService.downloadResource(resource);
+    if (!result.success) {
+      console.error('Erreur téléchargement:', result.error);
+      alert('Erreur lors du téléchargement. Réessaie plus tard.');
+    }
+  };
 
-const handleDownload = async (resource) => {
-  const result = await resourceService.downloadResource(resource);
-  if (!result.success) {
-    console.error('Erreur téléchargement:', result.error);
-    alert('Erreur lors du téléchargement. Réessaie plus tard.');
-  }
-};
+  // ✅ FONCTION SUPPRESSION
+  const handleDelete = async (resourceId) => {
+    console.log('🗑️ Suppression demande pour:', resourceId);
+    
+    if (window.confirm('Es-tu sûr de vouloir supprimer cette ressource ? Cette action est irréversible.')) {
+      const result = await resourceService.deleteResource(resourceId);
+      
+      if (result.success) {
+        console.log('✅ Ressource supprimée');
+        // Recharger la liste
+        await loadData();
+      } else {
+        console.error('❌ Erreur suppression:', result.error);
+        alert('Erreur lors de la suppression: ' + result.error);
+      }
+    }
+  };
+
+  const handleUploadSuccess = () => {
+    console.log('✅ Upload réussi, rechargement...');
+    loadData();
+    setShowUpload(false);
+  };
 
   if (loading) return <div className="loading-spinner"><div className="spinner"></div></div>;
 
@@ -138,7 +147,6 @@ const handleDownload = async (resource) => {
       <Navbar />
       
       <div className="resources-container">
-        {/* Header */}
         <div className="resources-header">
           <div>
             <h1>📚 Bibliothèque de ressources</h1>
@@ -149,7 +157,6 @@ const handleDownload = async (resource) => {
           </button>
         </div>
 
-        {/* Barre de recherche */}
         <div className="search-bar">
           <div className="search-input-wrapper">
             <span className="search-icon">🔍</span>
@@ -165,7 +172,6 @@ const handleDownload = async (resource) => {
             )}
           </div>
           
-          {/* Vue toggle */}
           <div className="view-toggle">
             <button 
               className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
@@ -182,11 +188,8 @@ const handleDownload = async (resource) => {
           </div>
         </div>
 
-        {/* Layout principal */}
         <div className="resources-layout">
-          {/* Sidebar filtres + top contributeurs */}
           <aside className="resources-sidebar">
-            {/* Filtres */}
             <div className="filter-section">
               <h3>Filtres</h3>
               
@@ -248,15 +251,13 @@ const handleDownload = async (resource) => {
               </div>
             </div>
 
-            {/* Top contributeurs */}
             <TopContributors contributors={topContributors} />
           </aside>
 
-          {/* Grille des ressources */}
           <main className="resources-main">
             <div className="resources-stats">
               <span>{filteredResources.length} ressource(s) trouvée(s)</span>
-              {filters.type !== 'all' && (
+              {(filters.type !== 'all' || filters.subject !== 'all' || filters.level !== 'all' || filters.groupId !== 'all') && (
                 <button 
                   className="clear-filters"
                   onClick={() => setFilters({ type: 'all', subject: 'all', level: 'all', groupId: 'all' })}
@@ -283,6 +284,7 @@ const handleDownload = async (resource) => {
                     resource={resource}
                     onLike={() => handleLike(resource.id)}
                     onDownload={() => handleDownload(resource)}
+                    onDelete={() => handleDelete(resource.id)}
                     currentUserId={user.uid}
                     viewMode={viewMode}
                   />
@@ -293,7 +295,6 @@ const handleDownload = async (resource) => {
         </div>
       </div>
 
-      {/* Modal upload */}
       {showUpload && (
         <UploadModal
           onClose={() => setShowUpload(false)}
