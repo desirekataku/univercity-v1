@@ -1,6 +1,8 @@
+// src/components/Navbar.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -30,15 +32,16 @@ const Navbar = () => {
           <div className="nav-links">
             <Link to="/feed" className="nav-link">Feed</Link>
             <Link to="/explore" className="nav-link">Explorer</Link>
-            <Link to="/resources" className="nav-link">Ressources</Link>
             <Link to="/events" className="nav-link">Événements</Link>
             <Link to="/messages" className="nav-link">Messages</Link>
+            <Link to="/resources" className="nav-link">📚 Ressources</Link>
           </div>
         )}
 
         <div className="nav-right">
           {isAuthenticated ? (
             <>
+              <NotificationBell />
               <Link to="/profile" className="nav-avatar" style={{ background: user?.avatarBg || '#1B4FD8' }}>
                 {user?.initials || 'U'}
               </Link>
@@ -60,6 +63,7 @@ const Navbar = () => {
           <Link to="/explore" onClick={() => setMenuOpen(false)}>Explorer</Link>
           <Link to="/events" onClick={() => setMenuOpen(false)}>Événements</Link>
           <Link to="/messages" onClick={() => setMenuOpen(false)}>Messages</Link>
+          <Link to="/resources" onClick={() => setMenuOpen(false)}>📚 Ressources</Link>
           <Link to="/profile" onClick={() => setMenuOpen(false)}>Profil</Link>
           <button onClick={() => { handleLogout(); setMenuOpen(false); }}>Déconnexion</button>
         </div>
@@ -69,4 +73,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
