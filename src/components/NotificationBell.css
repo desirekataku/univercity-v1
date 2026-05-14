@@ -146,3 +146,45 @@
     right: -40px;
   }
 }
+
+/* src/components/NotificationBell.css - Ajoute à la fin */
+
+.unread-messages-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #e8eefb;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+}
+
+.unread-messages-banner:hover {
+  background: #dce5f5;
+}
+
+.unread-messages-icon {
+  font-size: 1.2rem;
+}
+
+.unread-messages-content {
+  flex: 1;
+}
+
+.unread-messages-content strong {
+  font-size: 0.8rem;
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.unread-messages-content span {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.unread-messages-arrow {
+  font-size: 1rem;
+  color: var(--blue);
+}

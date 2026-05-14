@@ -2,7 +2,7 @@
 import { db } from '../config/firebase';
 import { 
   collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc,
-  query, where, orderBy, limit, Timestamp, arrayUnion, arrayRemove 
+  query, where, orderBy, limit, Timestamp, onSnapshot
 } from 'firebase/firestore';
 
 const NOTIFICATIONS = 'notifications';
@@ -16,7 +16,7 @@ export const notificationService = {
       const now = Timestamp.now();
       const docRef = await addDoc(ref, {
         userId,
-        type, // 'message', 'like', 'comment', 'join', 'event'
+        type,
         title,
         message,
         data: data || {},
@@ -95,6 +95,59 @@ export const notificationService = {
     } catch (error) {
       return { success: false };
     }
+  },
+
+  // Récupérer le nombre de messages non lus
+  async getUnreadMessagesCount(userId) {
+    try {
+      // Récupérer toutes les conversations de l'utilisateur
+      const convRef = collection(db, 'conversations');
+      const q = query(convRef, where('participants', 'array-contains', userId));
+      const snapshot = await getDocs(q);
+      
+      let unreadCount = 0;
+      
+      for (const convDoc of snapshot.docs) {
+        const convId = convDoc.id;
+        const messagesRef = collection(db, 'conversations', convId, 'messages');
+        const messagesQuery = query(
+          messagesRef,
+          where('read', '==', false),
+          where('senderId', '!=', userId)
+        );
+        const messagesSnapshot = await getDocs(messagesQuery);
+        unreadCount += messagesSnapshot.size;
+      }
+      
+      return { success: true, count: unreadCount };
+    } catch (error) {
+      console.error('Get unread messages count error:', error);
+      return { success: true, count: 0 };
+    }
+  },
+
+  // Écouter les changements de messages non lus en temps réel
+  subscribeToUnreadMessages(userId, callback) {
+    const convRef = collection(db, 'conversations');
+    const q = query(convRef, where('participants', 'array-contains', userId));
+    
+    return onSnapshot(q, async (snapshot) => {
+      let unreadCount = 0;
+      
+      for (const convDoc of snapshot.docs) {
+        const convId = convDoc.id;
+        const messagesRef = collection(db, 'conversations', convId, 'messages');
+        const messagesQuery = query(
+          messagesRef,
+          where('read', '==', false),
+          where('senderId', '!=', userId)
+        );
+        const messagesSnapshot = await getDocs(messagesQuery);
+        unreadCount += messagesSnapshot.size;
+      }
+      
+      callback(unreadCount);
+    });
   },
 
   // Formater le temps

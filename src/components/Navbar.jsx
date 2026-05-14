@@ -1,14 +1,31 @@
 // src/components/Navbar.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
+import { notificationService } from '../services/notificationService';
 import './Navbar.css';
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      const loadUnreadCount = async () => {
+        const result = await notificationService.getUnreadMessagesCount(user.uid);
+        if (result.success) {
+          setUnreadMessagesCount(result.count);
+        }
+      };
+      loadUnreadCount();
+      
+      const interval = setInterval(loadUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -33,8 +50,13 @@ const Navbar = () => {
             <Link to="/feed" className="nav-link">Feed</Link>
             <Link to="/explore" className="nav-link">Explorer</Link>
             <Link to="/events" className="nav-link">Événements</Link>
-            <Link to="/messages" className="nav-link">Messages</Link>
-            <Link to="/resources" className="nav-link">📚 Ressources</Link>
+            <Link to="/resources" className="nav-link">Ressources</Link>
+            <Link to="/messages" className="nav-link">
+              Messages
+              {unreadMessagesCount > 0 && (
+                <span className="messages-badge">{unreadMessagesCount}</span>
+              )}
+            </Link>
           </div>
         )}
 
@@ -56,14 +78,18 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Menu mobile */}
       {menuOpen && (
         <div className="mobile-menu">
           <Link to="/feed" onClick={() => setMenuOpen(false)}>Feed</Link>
           <Link to="/explore" onClick={() => setMenuOpen(false)}>Explorer</Link>
           <Link to="/events" onClick={() => setMenuOpen(false)}>Événements</Link>
-          <Link to="/messages" onClick={() => setMenuOpen(false)}>Messages</Link>
-          <Link to="/resources" onClick={() => setMenuOpen(false)}>📚 Ressources</Link>
+           <Link to="/resources" onClick={() => setMenuOpen(false)}>Ressources</Link>
+          <Link to="/messages" onClick={() => setMenuOpen(false)}>
+            Messages
+            {unreadMessagesCount > 0 && (
+              <span className="messages-badge">{unreadMessagesCount}</span>
+            )}
+          </Link>
           <Link to="/profile" onClick={() => setMenuOpen(false)}>Profil</Link>
           <button onClick={() => { handleLogout(); setMenuOpen(false); }}>Déconnexion</button>
         </div>

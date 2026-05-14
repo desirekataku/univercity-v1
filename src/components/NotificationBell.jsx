@@ -9,15 +9,21 @@ const NotificationBell = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
     if (user) {
       loadNotifications();
+      loadUnreadMessagesCount();
       
       // Rafraîchir toutes les 30 secondes
-      const interval = setInterval(loadNotifications, 30000);
+      const interval = setInterval(() => {
+        loadNotifications();
+        loadUnreadMessagesCount();
+      }, 30000);
+      
       return () => clearInterval(interval);
     }
   }, [user]);
@@ -38,6 +44,13 @@ const NotificationBell = () => {
       setNotifications(result.data);
       const unread = result.data.filter(n => !n.read).length;
       setUnreadCount(unread);
+    }
+  };
+
+  const loadUnreadMessagesCount = async () => {
+    const result = await notificationService.getUnreadMessagesCount(user.uid);
+    if (result.success) {
+      setUnreadMessagesCount(result.count);
     }
   };
 
@@ -75,12 +88,15 @@ const NotificationBell = () => {
     return '#';
   };
 
+  // Total des notifications non lues (notifications + messages)
+  const totalUnread = unreadCount + unreadMessagesCount;
+
   return (
     <div className="notification-bell" ref={dropdownRef}>
       <button className="bell-btn" onClick={() => setIsOpen(!isOpen)}>
         🔔
-        {unreadCount > 0 && (
-          <span className="badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+        {totalUnread > 0 && (
+          <span className="badge">{totalUnread > 9 ? '9+' : totalUnread}</span>
         )}
       </button>
 
@@ -95,8 +111,20 @@ const NotificationBell = () => {
             )}
           </div>
 
+          {/* Section messages non lus */}
+          {unreadMessagesCount > 0 && (
+            <Link to="/messages" className="unread-messages-banner" onClick={() => setIsOpen(false)}>
+              <div className="unread-messages-icon">💬</div>
+              <div className="unread-messages-content">
+                <strong>{unreadMessagesCount} message(s) non lu(s)</strong>
+                <span>Consultez vos messages</span>
+              </div>
+              <div className="unread-messages-arrow">→</div>
+            </Link>
+          )}
+
           <div className="dropdown-list">
-            {notifications.length === 0 ? (
+            {notifications.length === 0 && unreadMessagesCount === 0 ? (
               <div className="empty-notifications">
                 <span>📭</span>
                 <p>Aucune notification</p>

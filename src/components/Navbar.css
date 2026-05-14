@@ -111,3 +111,22 @@
   .btn-logout { display: none; }
 }
 
+/* src/components/Navbar.css - Ajoute à la fin */
+
+.messages-badge {
+  background: #ef4444;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.15rem 0.4rem;
+  border-radius: 50%;
+  margin-left: 0.3rem;
+  min-width: 16px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu .messages-badge {
+    margin-left: 0.5rem;
+  }
+}
