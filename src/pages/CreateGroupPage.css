@@ -45,3 +45,72 @@ textarea.input {
   font-family: inherit;
 }
 
+/* src/pages/CreateGroupPage.css - Ajoute à la fin */
+
+.icon-selector {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.icon-btn {
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+  background: #1a1d24;
+  border: 2px solid #2a2d35;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.icon-btn.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  transform: scale(1.05);
+}
+
+.color-selector {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.color-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.color-btn.active {
+  border-color: white;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px #6c63ff;
+}
+
+.preview-group {
+  margin-top: 1rem;
+}
+
+.group-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 16px;
+  color: white;
+}
+
+.preview-icon {
+  font-size: 2rem;
+}
+
+.preview-name {
+  font-size: 1rem;
+  font-weight: 600;
+}

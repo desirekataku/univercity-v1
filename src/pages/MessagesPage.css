@@ -33,6 +33,7 @@
   color: white;
   font-size: 1.2rem;
   font-weight: 600;
+  margin: 0;
 }
 
 .new-chat-btn {
@@ -42,7 +43,7 @@
   height: 36px;
   border-radius: 50%;
   color: white;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -71,7 +72,6 @@
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: 0.25rem;
-  position: relative;
 }
 
 .conversation-item:hover {
@@ -114,20 +114,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.unread-badge {
-  background: #6c63ff;
-  color: white;
-  font-size: 0.7rem;
-  font-weight: 600;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 6px;
 }
 
 /* Empty conversations */
@@ -194,7 +180,7 @@
 .chat-user-info h3 {
   color: white;
   font-size: 1rem;
-  margin-bottom: 0.15rem;
+  margin: 0 0 0.15rem 0;
 }
 
 .user-status {
@@ -290,6 +276,7 @@
 
 .empty-sub {
   font-size: 0.8rem;
+  color: #6b7280;
 }
 
 /* Input chat */
@@ -365,6 +352,7 @@
 .no-conversation h3 {
   color: white;
   font-size: 1.2rem;
+  margin: 0;
 }
 
 .no-conversation p {
@@ -381,6 +369,24 @@
   color: white;
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+/* Bouton retour mobile */
+.back-to-conversations {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #111318;
+  border-bottom: 1px solid #1f222a;
+  cursor: pointer;
+  color: #6c63ff;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.back-to-conversations span {
+  font-size: 1.2rem;
 }
 
 /* Modal nouvelle conversation */
@@ -400,18 +406,9 @@
   position: relative;
 }
 
-.search-bar .search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.9rem;
-  opacity: 0.6;
-}
-
 .search-bar .search-input {
   flex: 1;
-  padding: 0.7rem 1rem 0.7rem 2.5rem;
+  padding: 0.7rem 1rem;
   background: #1a1d24;
   border: 1px solid #2a2d35;
   border-radius: 100px;
@@ -506,32 +503,97 @@
   color: #8a8f9a;
 }
 
-/* Responsive */
+/* ============ RESPONSIVE MOBILE ============ */
 @media (max-width: 768px) {
-  .conversations-sidebar {
-    width: 280px;
-  }
-  
-  .message-row {
-    max-width: 85%;
-  }
-}
-
-@media (max-width: 640px) {
-  .conversations-sidebar {
-    display: none;
-  }
-  
   .messages-container {
-    display: block;
+    flex-direction: column;
+  }
+  
+  .conversations-sidebar {
+    width: 100%;
+    max-height: 280px;
+    border-right: none;
+    border-bottom: 1px solid #1f222a;
+    display: block !important;
   }
   
   .chat-area {
-    width: 100%;
+    height: calc(100vh - 280px - var(--nav));
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Quand une conversation est active, on cache la sidebar */
+  .messages-container.has-active-conv .conversations-sidebar {
+    display: none !important;
+  }
+  
+  .messages-container.has-active-conv .chat-area {
+    height: calc(100vh - var(--nav));
+  }
+  
+  /* Afficher le bouton retour */
+  .back-to-conversations {
+    display: flex;
+  }
+  
+  /* Messages sur mobile */
+  .message-row {
+    max-width: 85%;
+  }
+  
+  .message-row.mine {
+    align-self: flex-end;
+  }
+  
+  .message-row.theirs {
+    align-self: flex-start;
+  }
+  
+  .message-bubble.mine {
+    background: #6c63ff;
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+  }
+  
+  .message-bubble.theirs {
+    background: #1a1d24;
+    color: #cbd5e1;
+    border-radius: 18px 18px 18px 4px;
+  }
+  
+  .message-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .chat-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .chat-messages {
+    padding: 1rem;
+  }
+  
+  .chat-input-area {
+    padding: 0.75rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .conversations-sidebar {
+    max-height: 250px;
+  }
+  
+  .chat-area {
+    height: calc(100vh - 250px - var(--nav));
+  }
+  
+  .messages-container.has-active-conv .chat-area {
+    height: calc(100vh - var(--nav));
   }
   
   .message-row {
     max-width: 90%;
   }
 }
-

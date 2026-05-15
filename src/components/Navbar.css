@@ -1,10 +1,10 @@
-
+/* src/components/Navbar.css - DESIGN SOMBRE */
 .topnav {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 200;
   height: var(--nav);
-  background: #fff;
+  background: #111318;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -16,7 +16,7 @@
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.25rem;
-  color: var(--blue-dark);
+  color: white;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -48,7 +48,6 @@
   width: 36px; height: 36px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display);
   font-weight: 700; font-size: 0.85rem;
   color: #fff; text-decoration: none;
 }
@@ -85,7 +84,7 @@
   display: none;
   position: fixed;
   top: var(--nav); left: 0; right: 0;
-  background: #fff;
+  background: #111318;
   border-bottom: 1px solid var(--border);
   padding: 1rem;
   z-index: 199;
@@ -111,8 +110,7 @@
   .btn-logout { display: none; }
 }
 
-/* src/components/Navbar.css - Ajoute à la fin */
-
+/* Badge pour messages non lus */
 .messages-badge {
   background: #ef4444;
   color: white;
@@ -123,10 +121,4 @@
   margin-left: 0.3rem;
   min-width: 16px;
   text-align: center;
-}
-
-@media (max-width: 768px) {
-  .mobile-menu .messages-badge {
-    margin-left: 0.5rem;
-  }
 }

@@ -11,7 +11,6 @@ const MESSAGES = 'messages';
 
 export const messageService = {
 
-  // Créer ou récupérer une conversation entre 2 utilisateurs
   async getOrCreateConversation(user1Id, user2Id) {
     try {
       const ref = collection(db, CONVERSATIONS);
@@ -45,7 +44,6 @@ export const messageService = {
     }
   },
 
-  // Récupérer les conversations d'un utilisateur
   async getUserConversations(userId) {
     try {
       const ref = collection(db, CONVERSATIONS);
@@ -60,7 +58,6 @@ export const messageService = {
     }
   },
 
-  // Envoyer un message
   async sendMessage(convId, data) {
     try {
       const msgRef = collection(db, CONVERSATIONS, convId, MESSAGES);
@@ -71,12 +68,10 @@ export const messageService = {
         read: false
       });
 
-      // Récupérer la conversation pour savoir qui notifier
       const convRef = doc(db, CONVERSATIONS, convId);
       const convSnap = await getDoc(convRef);
       const convData = convSnap.data();
       
-      // Notifier l'autre participant (sauf si c'est un groupe)
       if (!convData.isGroup) {
         const otherParticipant = convData.participants.find(id => id !== data.senderId);
         if (otherParticipant) {
@@ -95,7 +90,6 @@ export const messageService = {
         }
       }
 
-      // Mettre à jour la conversation
       await updateDoc(convRef, {
         lastMessage: data.content?.substring(0, 50) || '📎 Fichier',
         lastMessageTime: now,
@@ -109,7 +103,6 @@ export const messageService = {
     }
   },
 
-  // Récupérer les messages d'une conversation
   async getMessages(convId) {
     try {
       const ref = collection(db, CONVERSATIONS, convId, MESSAGES);
@@ -124,7 +117,6 @@ export const messageService = {
     }
   },
 
-  // Écouter les nouveaux messages en temps réel
   subscribeToMessages(convId, callback) {
     const ref = collection(db, CONVERSATIONS, convId, MESSAGES);
     const q = query(ref, orderBy('createdAt', 'asc'));
@@ -135,7 +127,6 @@ export const messageService = {
     });
   },
 
-  // Marquer comme lu
   async markAsRead(convId) {
     try {
       const convRef = doc(db, CONVERSATIONS, convId);
@@ -143,6 +134,30 @@ export const messageService = {
       return { success: true };
     } catch (error) {
       console.error('Mark as read error:', error);
+      return { success: false };
+    }
+  },
+
+  // ✅ FONCTION AJOUTÉE
+  async markConversationAsRead(convId, userId) {
+    try {
+      const messagesRef = collection(db, CONVERSATIONS, convId, MESSAGES);
+      const q = query(
+        messagesRef,
+        where('read', '==', false),
+        where('senderId', '!=', userId)
+      );
+      const snapshot = await getDocs(q);
+      
+      const promises = [];
+      snapshot.forEach(doc => {
+        promises.push(updateDoc(doc.ref, { read: true }));
+      });
+      await Promise.all(promises);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Mark conversation as read error:', error);
       return { success: false };
     }
   }
