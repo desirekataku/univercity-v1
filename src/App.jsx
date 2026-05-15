@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -5,7 +6,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 
 // Lazy loading des pages
-const LandingPage = lazy(() => import('./pages/LandingPage'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
 const FeedPage = lazy(() => import('./pages/FeedPage'));
 const ExplorePage = lazy(() => import('./pages/ExplorePage'));
@@ -28,29 +28,35 @@ function App() {
       <Router>
         <Suspense fallback={<Loading />}>
           <Routes>
-            {/* Routes publiques */}
-            <Route path="/" element={<LandingPage />} />
+            {/* 🔥 Redirection directe vers la page d'authentification */}
+            <Route path="/" element={<Navigate to="/auth" replace />} />
+            
+            {/* Route d'authentification */}
             <Route path="/auth" element={<AuthPage />} />
 
             {/* Routes protégées */}
             <Route path="/feed" element={
               <ProtectedRoute>
-                <><Navbar /><FeedPage /></>
+                <Navbar />
+                <FeedPage />
               </ProtectedRoute>
             } />
             <Route path="/explore" element={
               <ProtectedRoute>
-                <><Navbar /><ExplorePage /></>
+                <Navbar />
+                <ExplorePage />
               </ProtectedRoute>
             } />
             <Route path="/group/:id" element={
               <ProtectedRoute>
-                <><Navbar /><GroupPage /></>
+                <Navbar />
+                <GroupPage />
               </ProtectedRoute>
             } />
             <Route path="/create-group" element={
               <ProtectedRoute>
-                <><Navbar /><CreateGroupPage /></>
+                <Navbar />
+                <CreateGroupPage />
               </ProtectedRoute>
             } />
             <Route path="/messages" element={
@@ -60,28 +66,30 @@ function App() {
             } />
             <Route path="/events" element={
               <ProtectedRoute>
-                <><Navbar /><EventsPage /></>
+                <Navbar />
+                <EventsPage />
               </ProtectedRoute>
             } />
             <Route path="/profile" element={
               <ProtectedRoute>
-                <><Navbar /><ProfilePage /></>
+                <Navbar />
+                <ProfilePage />
               </ProtectedRoute>
             } />
             <Route path="/profile/:userId" element={
               <ProtectedRoute>
-                <><Navbar /><ProfilePage /></>
+                <Navbar />
+                <ProfilePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/resources" element={
+              <ProtectedRoute>
+                <ResourcesPage />
               </ProtectedRoute>
             } />
 
-            <Route path="/resources" element={
-  <ProtectedRoute>
-    <ResourcesPage />
-  </ProtectedRoute>
-} />
-
-            {/* 404 */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* 404 - Rediriger vers auth */}
+            <Route path="*" element={<Navigate to="/auth" replace />} />
           </Routes>
         </Suspense>
       </Router>
@@ -90,4 +98,3 @@ function App() {
 }
 
 export default App;
-
